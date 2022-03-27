@@ -1,0 +1,7 @@
+[requires]
+glad/0.1.34
+glm/0.9.9.8
+glfw/3.3.6
+
+[generators]
+premake

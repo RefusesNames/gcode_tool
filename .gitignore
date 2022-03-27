@@ -1,0 +1,8 @@
+build
+bin
+psClang
+*.sln
+.yabs
+.cache
+.vs
+compile_commands.json
