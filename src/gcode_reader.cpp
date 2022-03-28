@@ -36,7 +36,7 @@ namespace gcode
 
         if (line.size() == 0)
             return std::nullopt;
-        
+
         auto command = get_command(line);
 
         if (command == "G0")
@@ -95,13 +95,13 @@ namespace gcode
             return {};
 
         line.remove_prefix(index_of_first_space + 1);
-        
+
         size_t index_behind_parameter;
         std::vector<command::parameter> commands;
         do {
-            index_behind_parameter = line.find_first_of(" ");  
+            index_behind_parameter = line.find_first_of(" ");
             auto parameter_value = line.substr(1, index_behind_parameter);
-            commands.push_back(command::parameter { line[0], std::stof(parameter_value.data()) });            
+            commands.push_back(command::parameter { line[0], std::stof(parameter_value.data()) });
 
             line.remove_prefix(index_behind_parameter + 1);
         } while (index_behind_parameter != std::string::npos);
