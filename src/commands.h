@@ -13,11 +13,11 @@ namespace gcode
             float value;
         };
 
-        enum code
+        enum code : uint32_t
         {
+            G28 = 0,
             G0,
-            G1,
-            G28
+            G1
         };
 
         code code;

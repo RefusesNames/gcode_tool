@@ -23,7 +23,13 @@ void scroll_callback(GLFWwindow * window, double x_offset, double y_offset);
 GLenum glCheckError_(const char *file, int line);
 #define glCheckError() glCheckError_(__FILE__, __LINE__)
 
-std::vector<glm::vec3> commands_to_vertices(std::vector<gcode::command> & commands);
+struct annotated_vertex
+{
+    glm::vec3 position;
+    uint32_t type;
+};
+
+std::vector<annotated_vertex> commands_to_vertices(std::vector<gcode::command> & commands);
 
 auto camera_position = glm::vec3(0.0f, 0.0f, -3.0f);
 
@@ -126,10 +132,13 @@ int main(int argc, char *argv[])
 
     // attributes
     GLint position_attribute = glGetAttribLocation(shader_program, "position");
-    glVertexAttribPointer(position_attribute, 3, GL_FLOAT, GL_FALSE, 0 , 0);
+    glVertexAttribPointer(position_attribute, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float) + sizeof(uint32_t) , 0);
     glEnableVertexAttribArray(position_attribute);
 
-
+    GLint type_attribute = glGetAttribLocation(shader_program, "command_type");
+    // glVertexAttribIPointer(type_attribute, 1, GL_UNSIGNED_INT, 3 * sizeof(float) , vertices.data() + 3 * sizeof(float));
+    glVertexAttribIPointer(type_attribute, 1, GL_UNSIGNED_INT, 3 * sizeof(float) + sizeof(uint32_t) , (void*) (3 * sizeof(float)));
+    glEnableVertexAttribArray(type_attribute);
 
     while(!glfwWindowShouldClose(window))
     {
@@ -152,10 +161,7 @@ int main(int argc, char *argv[])
 
         glfwSwapBuffers(window);
 
-        if (glGetError() != GL_NO_ERROR)
-        {
-            std::cerr << "ERROR" << std::endl;
-        }
+        glCheckError();
     }
 
     glfwTerminate();
@@ -208,10 +214,10 @@ GLenum glCheckError_(const char *file, int line)
     return errorCode;
 }
 
-std::vector<glm::vec3> commands_to_vertices(std::vector<gcode::command> & commands)
+std::vector<annotated_vertex> commands_to_vertices(std::vector<gcode::command> & commands)
 {
     glm::vec3 previous_location = glm::vec3(0, 0, 0);
-    std::vector<glm::vec3> vertices;
+    std::vector<annotated_vertex> vertices;
     vertices.reserve(commands.size());
 
     for(auto & command : commands)
@@ -223,7 +229,7 @@ std::vector<glm::vec3> commands_to_vertices(std::vector<gcode::command> & comman
             else if (parameter.name == 'Y')
             {
                 parameter.name = 'Z';
-                parameter.value *= -1.0f;
+                // parameter.value *= -1.0f;
             }
             else if (parameter.name == 'X')
                 parameter.value *= -1.0f;
@@ -265,7 +271,7 @@ std::vector<glm::vec3> commands_to_vertices(std::vector<gcode::command> & comman
             default:
                 break;
         }
-        vertices.push_back(previous_location);
+        vertices.push_back({ previous_location, command.code });
     }
 
     return vertices;
