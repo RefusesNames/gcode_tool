@@ -23,6 +23,13 @@ void scroll_callback(GLFWwindow * window, double x_offset, double y_offset);
 GLenum glCheckError_(const char *file, int line);
 #define glCheckError() glCheckError_(__FILE__, __LINE__)
 
+struct axis_aligned_bounding_box
+{
+    glm::vec3 lower = glm::vec3();
+    glm::vec3 upper = glm::vec3();
+    glm::vec3 weighted_center = glm::vec3();
+};
+
 struct annotated_vertex
 {
     glm::vec3 position;
@@ -30,6 +37,8 @@ struct annotated_vertex
 };
 
 std::vector<annotated_vertex> commands_to_vertices(std::vector<gcode::command> & commands);
+
+axis_aligned_bounding_box create_aabb(std::vector<annotated_vertex> const & vertices);
 
 auto camera_position = glm::vec3(0.0f, 0.0f, -3.0f);
 
@@ -71,6 +80,9 @@ int main(int argc, char *argv[])
     gcode::reader reader;
     auto commands = reader.read_file(argv[1]);
     auto vertices = commands_to_vertices(commands);
+    auto scene_aabb = create_aabb(vertices);
+
+    camera_position.y = scene_aabb.upper.y + (scene_aabb.upper.y - scene_aabb.lower.y);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
     {
@@ -132,12 +144,11 @@ int main(int argc, char *argv[])
 
     // attributes
     GLint position_attribute = glGetAttribLocation(shader_program, "position");
-    glVertexAttribPointer(position_attribute, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float) + sizeof(uint32_t) , 0);
+    glVertexAttribPointer(position_attribute, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float) + sizeof(uint32_t), 0);
     glEnableVertexAttribArray(position_attribute);
 
     GLint type_attribute = glGetAttribLocation(shader_program, "command_type");
-    // glVertexAttribIPointer(type_attribute, 1, GL_UNSIGNED_INT, 3 * sizeof(float) , vertices.data() + 3 * sizeof(float));
-    glVertexAttribIPointer(type_attribute, 1, GL_UNSIGNED_INT, 3 * sizeof(float) + sizeof(uint32_t) , (void*) (3 * sizeof(float)));
+    glVertexAttribIPointer(type_attribute, 1, GL_UNSIGNED_INT, 3 * sizeof(float) + sizeof(uint32_t), (void*) (3 * sizeof(float)));
     glEnableVertexAttribArray(type_attribute);
 
     while(!glfwWindowShouldClose(window))
@@ -151,8 +162,8 @@ int main(int argc, char *argv[])
         glClear(GL_COLOR_BUFFER_BIT);
 
         auto model_matrix = glm::translate(glm::mat4(1.0f), object_translation);
-        auto view_matrix = glm::lookAt(camera_position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        auto projection_matrix = glm::perspective(glm::radians(45.0f), (float) window_parameters.width / (float) window_parameters.height, 1.0f, 1000.0f);
+        auto view_matrix = glm::lookAt(camera_position, scene_aabb.weighted_center, glm::vec3(0.0f, 1.0f, 0.0f));
+        auto projection_matrix = glm::perspective(glm::radians(45.0f), (float) window_parameters.width / (float) window_parameters.height, 1.0f, 2.0f * (scene_aabb.upper.z - scene_aabb.lower.z));
         auto mvp_matrix = projection_matrix * view_matrix * model_matrix;
         GLint matrix_uniform = glGetUniformLocation(shader_program, "model_view_projection_matrix");
         glUniformMatrix4fv(matrix_uniform, 1, GL_FALSE, glm::value_ptr(mvp_matrix));
@@ -301,7 +312,6 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         mouse.middle_button_pressed = true;
     else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
         mouse.middle_button_pressed = false;
-
 }
 
 void mouse_position_callback(GLFWwindow * window, double x_position, double y_position)
@@ -319,4 +329,30 @@ void scroll_callback(GLFWwindow * window, double x_offset, double y_offset)
 {
     camera_position.z += static_cast<float>(y_offset);
     mouse.scroll_value += static_cast<float>(y_offset);
+}
+
+axis_aligned_bounding_box create_aabb(std::vector<annotated_vertex> const & vertices)
+{
+    axis_aligned_bounding_box aabb;
+
+    for(auto const & annotated_vertex : vertices)
+    {
+        if (annotated_vertex.position.x < aabb.lower.x)
+            aabb.lower.x = annotated_vertex.position.x;
+        if (annotated_vertex.position.y < aabb.lower.y)
+            aabb.lower.y = annotated_vertex.position.y;
+        if (annotated_vertex.position.z < aabb.lower.z)
+            aabb.lower.z = annotated_vertex.position.z;
+        if (annotated_vertex.position.x > aabb.upper.x)
+            aabb.upper.x = annotated_vertex.position.x;
+        if (annotated_vertex.position.y > aabb.upper.y)
+            aabb.upper.y = annotated_vertex.position.y;
+        if (annotated_vertex.position.z > aabb.upper.z)
+            aabb.upper.z = annotated_vertex.position.z;
+
+        aabb.weighted_center += annotated_vertex.position;
+    }
+    aabb.weighted_center /= static_cast<float>(vertices.size());
+
+    return aabb;
 }
