@@ -1,14 +1,15 @@
-#include<glad/glad.h>
-#include<GLFW/glfw3.h>
-#include<glm/glm.hpp>
-#include<glm/gtc/matrix_transform.hpp>
-#include<glm/gtx/string_cast.hpp>
-#include<glm/gtc/type_ptr.hpp>
-#include<iostream>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <iostream>
 
-#include"window.h"
-#include"gcode_reader.h"
-#include"shaders.h"
+#include "window.h"
+#include "gcode_reader.h"
+#include "shaders.h"
+#include "camera.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
@@ -40,7 +41,7 @@ std::vector<annotated_vertex> commands_to_vertices(std::vector<gcode::command> &
 
 axis_aligned_bounding_box create_aabb(std::vector<annotated_vertex> const & vertices);
 
-auto camera_position = glm::vec3(0.0f, 0.0f, -3.0f);
+camera camera(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0, 1.0f, 0.0f));
 
 auto object_translation = glm::vec3(0.0f, 0.0f, 0.0f);
 
@@ -52,9 +53,6 @@ struct mouse_information
     bool middle_button_pressed = false;
     float scroll_value = 0.0f;
 } mouse;
-
-void zoom_out();
-void zoom_in();
 
 int main(int argc, char *argv[])
 {
@@ -82,7 +80,10 @@ int main(int argc, char *argv[])
     auto vertices = commands_to_vertices(commands);
     auto scene_aabb = create_aabb(vertices);
 
+    auto camera_position = camera.get_position();
     camera_position.y = scene_aabb.upper.y + (scene_aabb.upper.y - scene_aabb.lower.y);
+    camera.move_to(camera_position);
+    camera.look_at(scene_aabb.weighted_center);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
     {
@@ -162,13 +163,17 @@ int main(int argc, char *argv[])
         glClear(GL_COLOR_BUFFER_BIT);
 
         auto model_matrix = glm::translate(glm::mat4(1.0f), object_translation);
-        auto view_matrix = glm::lookAt(camera_position, scene_aabb.weighted_center, glm::vec3(0.0f, 1.0f, 0.0f));
-        auto projection_matrix = glm::perspective(glm::radians(45.0f), (float) window_parameters.width / (float) window_parameters.height, 1.0f, 2.0f * (scene_aabb.upper.z - scene_aabb.lower.z));
+        auto view_matrix = camera.get_view_matrix();
+        auto projection_matrix = glm::perspective(
+            glm::radians(45.0f),
+            (float) window_parameters.width / (float) window_parameters.height,
+            1.0f, 2.0f * (scene_aabb.upper.z - scene_aabb.lower.z)
+        );
         auto mvp_matrix = projection_matrix * view_matrix * model_matrix;
         GLint matrix_uniform = glGetUniformLocation(shader_program, "model_view_projection_matrix");
         glUniformMatrix4fv(matrix_uniform, 1, GL_FALSE, glm::value_ptr(mvp_matrix));
 
-        glDrawArrays(GL_LINE_STRIP, 0, vertices.size());
+        glDrawArrays(GL_LINE_STRIP, 0, static_cast<int>(vertices.size()));
 
         glfwSwapBuffers(window);
 
@@ -186,16 +191,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         glfwSetWindowShouldClose(window, GL_TRUE);
 
     if (key == GLFW_KEY_S && action == GLFW_PRESS)
-        zoom_out();
+        camera.move_by(glm::vec3(0.0f, 0.0f, 1.0f));
         
     if (key == GLFW_KEY_W && action == GLFW_PRESS)
-        zoom_in();
+        camera.move_by(glm::vec3(0.0f, 0.0f, -1.0f));
 
     if (key == GLFW_KEY_A && action == GLFW_PRESS)
-        camera_position.x--;
+        camera.move_by(glm::vec3(-1.0f, 0.0f, 0.0f));
 
     if (key == GLFW_KEY_D && action == GLFW_PRESS)
-        camera_position.x++;
+        camera.move_by(glm::vec3(1.0f, 0.0f, 0.0f));
 
 }
 
@@ -288,16 +293,6 @@ std::vector<annotated_vertex> commands_to_vertices(std::vector<gcode::command> &
     return vertices;
 }
 
-void zoom_out()
-{
-    camera_position.z--;
-}
-
-void zoom_in()
-{
-    camera_position.z++;
-}
-
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
@@ -327,7 +322,7 @@ void mouse_position_callback(GLFWwindow * window, double x_position, double y_po
 
 void scroll_callback(GLFWwindow * window, double x_offset, double y_offset)
 {
-    camera_position.z += static_cast<float>(y_offset);
+    camera.zoom(static_cast<float>(y_offset));
     mouse.scroll_value += static_cast<float>(y_offset);
 }
 
