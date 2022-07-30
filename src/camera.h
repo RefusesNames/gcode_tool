@@ -13,6 +13,7 @@ class camera
         );
 
         void move_by(glm::vec3 const & translation);
+        void move_by_relative_to_view(glm::vec3 const & translation);
         void move_to(glm::vec3 const & translation);
 
         void look_at(glm::vec3 const & look_at_this);

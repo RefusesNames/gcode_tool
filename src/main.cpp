@@ -43,8 +43,6 @@ axis_aligned_bounding_box create_aabb(std::vector<annotated_vertex> const & vert
 
 camera camera(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0, 1.0f, 0.0f));
 
-auto object_translation = glm::vec3(0.0f, 0.0f, 0.0f);
-
 struct mouse_information
 {
     glm::vec2 position = glm::vec2(0.0f, 0.0f);
@@ -162,14 +160,13 @@ int main(int argc, char *argv[])
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        auto model_matrix = glm::translate(glm::mat4(1.0f), object_translation);
         auto view_matrix = camera.get_view_matrix();
         auto projection_matrix = glm::perspective(
             glm::radians(45.0f),
             (float) window_parameters.width / (float) window_parameters.height,
             1.0f, 2.0f * (scene_aabb.upper.z - scene_aabb.lower.z)
         );
-        auto mvp_matrix = projection_matrix * view_matrix * model_matrix;
+        auto mvp_matrix = projection_matrix * view_matrix;
         GLint matrix_uniform = glGetUniformLocation(shader_program, "model_view_projection_matrix");
         glUniformMatrix4fv(matrix_uniform, 1, GL_FALSE, glm::value_ptr(mvp_matrix));
 
@@ -191,16 +188,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         glfwSetWindowShouldClose(window, GL_TRUE);
 
     if (key == GLFW_KEY_S && action == GLFW_PRESS)
-        camera.move_by(glm::vec3(0.0f, 0.0f, 1.0f));
+        camera.move_by(glm::vec3(0.0f, 0.0f, -1.0f));
         
     if (key == GLFW_KEY_W && action == GLFW_PRESS)
-        camera.move_by(glm::vec3(0.0f, 0.0f, -1.0f));
+        camera.move_by(glm::vec3(0.0f, 0.0f, 1.0f));
 
     if (key == GLFW_KEY_A && action == GLFW_PRESS)
-        camera.move_by(glm::vec3(-1.0f, 0.0f, 0.0f));
+        camera.move_by(glm::vec3(1.0f, 0.0f, 0.0f));
 
     if (key == GLFW_KEY_D && action == GLFW_PRESS)
-        camera.move_by(glm::vec3(1.0f, 0.0f, 0.0f));
+        camera.move_by(glm::vec3(-1.0f, 0.0f, 0.0f));
 
 }
 
@@ -245,7 +242,6 @@ std::vector<annotated_vertex> commands_to_vertices(std::vector<gcode::command> &
             else if (parameter.name == 'Y')
             {
                 parameter.name = 'Z';
-                // parameter.value *= -1.0f;
             }
             else if (parameter.name == 'X')
                 parameter.value *= -1.0f;
@@ -314,8 +310,12 @@ void mouse_position_callback(GLFWwindow * window, double x_position, double y_po
     auto new_position = glm::vec2(x_position, y_position);
     if (mouse.middle_button_pressed)
     {
-        auto difference = new_position - mouse.position;
-        object_translation += glm::vec3(difference, 0);
+        const auto SPEED = 40.0f;
+        auto difference = (new_position - mouse.position);
+        difference.x /= static_cast<float>(window_creation_parameters().width);
+        difference.y /= static_cast<float>(window_creation_parameters().height);
+        difference *= SPEED;
+        camera.move_by_relative_to_view(glm::vec3(difference, 0));
     }
     mouse.position = new_position;
 }

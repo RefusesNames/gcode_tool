@@ -20,6 +20,11 @@ void camera::move_by(glm::vec3 const & translation)
     _position += translation;
 }
 
+void camera::move_by_relative_to_view(glm::vec3 const & translation)
+{
+    _position += translation;
+}
+
 void camera::move_to(glm::vec3 const & new_position)
 {
     _position = new_position;
@@ -37,7 +42,8 @@ void camera::zoom(float amount)
 
 glm::mat4 camera::get_view_matrix() const
 {
-    return glm::lookAt(_position, _position + _view_direction, _up);
+    auto translation = glm::translate(_position);
+    return translation * glm::lookAt(glm::vec3(), _view_direction, _up);
 }
 
 glm::vec3 camera::get_position() const
