@@ -8,8 +8,11 @@
 #include "window.h"
 #include "shaders.h"
 #include "camera.h"
+#include "config.h"
 
 camera camera(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0, 1.0f, 0.0f));
+
+config config;
 
 mouse_information mouse;
 
@@ -271,11 +274,10 @@ void mouse_position_callback(GLFWwindow * window, double x_position, double y_po
     auto new_position = glm::vec2(x_position, y_position);
     if (mouse.middle_button_pressed)
     {
-        const auto SPEED = 40.0f;
         auto difference = (new_position - mouse.position);
         difference.x /= static_cast<float>(window_creation_parameters().width);
         difference.y /= static_cast<float>(window_creation_parameters().height);
-        difference *= SPEED;
+        difference *= config.camera.SPEED_MOUSE;
         camera.move_by_relative_to_view(glm::vec3(difference, 0));
     }
     mouse.position = new_position;
