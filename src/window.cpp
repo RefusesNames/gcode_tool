@@ -1,6 +1,5 @@
 #include "window.h"
 
-
 GLFWwindow* create_window(window_creation_parameters const & parameters)
 {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
