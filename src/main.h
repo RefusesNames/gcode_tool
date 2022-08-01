@@ -9,27 +9,25 @@
 
 struct axis_aligned_bounding_box
 {
-    glm::vec3 lower = glm::vec3();
-    glm::vec3 upper = glm::vec3();
-    glm::vec3 weighted_center = glm::vec3();
+	glm::vec3 lower = glm::vec3();
+	glm::vec3 upper = glm::vec3();
+	glm::vec3 weighted_center = glm::vec3();
 };
 
 struct annotated_vertex
 {
-    glm::vec3 position;
-    uint32_t type;
+	glm::vec3 position;
+	uint32_t type;
 };
 
 struct mouse_information
 {
-    glm::vec2 position = glm::vec2(0.0f, 0.0f);
-    bool left_button_pressed = false;
-    bool right_button_pressed = false;
-    bool middle_button_pressed = false;
-    float scroll_value = 0.0f;
+	glm::vec2 position = glm::vec2(0.0f, 0.0f);
+	bool left_button_pressed = false;
+	bool right_button_pressed = false;
+	bool middle_button_pressed = false;
+	float scroll_value = 0.0f;
 };
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
 void error_callback(int, const char * error_message);
 
