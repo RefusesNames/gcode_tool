@@ -44,10 +44,10 @@ camera_keyboard_handler::camera_keyboard_handler(camera & camera)
 camera_keyboard_handler::camera_keyboard_handler(camera_keyboard_handler const && other)
 	:_camera(other._camera)
 {
-	remove_from_handlers(&other);
+	// remove_from_handlers(&other);
 }
 
 camera_keyboard_handler::~camera_keyboard_handler()
 {
-	remove_from_handlers(this);
+	// remove_from_handlers(this);
 }
