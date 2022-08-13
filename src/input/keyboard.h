@@ -20,7 +20,7 @@ class keyboard_handler
 		virtual key_action_result on_key_release(int key, int mods) = 0;
 		virtual key_action_result on_key_hold(int key, int mods) = 0;
 
-		static std::vector<std::unique_ptr<keyboard_handler>> _handlers;
+		static std::vector<keyboard_handler*> _handlers;
 
 		void remove_from_handlers(keyboard_handler const * handler);
 };

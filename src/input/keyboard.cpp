@@ -1,7 +1,7 @@
 #include "keyboard.h"
 #include "GLFW/glfw3.h"
 
-std::vector<std::unique_ptr<keyboard_handler>> keyboard_handler::_handlers = {};
+std::vector<keyboard_handler*> keyboard_handler::_handlers = {};
 
 void keyboard_handler::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -24,7 +24,7 @@ void keyboard_handler::key_callback(GLFWwindow* window, int key, int scancode, i
 
 void keyboard_handler::remove_from_handlers(keyboard_handler const * handler)
 {
-	auto is_given_handler = [handler](std::unique_ptr<keyboard_handler> const & other_handler) { return other_handler.get() == handler; };
+	auto is_given_handler = [handler](keyboard_handler const * const other_handler) { return other_handler == handler; };
 	auto position = std::find_if(_handlers.begin(), _handlers.end(), is_given_handler);
 	if(position != _handlers.end())
 		_handlers.erase(position);

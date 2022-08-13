@@ -35,19 +35,20 @@ keyboard_handler::key_action_result camera_keyboard_handler::on_key_hold(int key
 	return key_action_result::PASSED_ON;
 }
 
-camera_keyboard_handler::camera_keyboard_handler(camera & camera)
+camera_keyboard_handler::camera_keyboard_handler(camera & camera) noexcept
 	:_camera(camera)
 {
 	_handlers.emplace_back(this);
 }
 
-camera_keyboard_handler::camera_keyboard_handler(camera_keyboard_handler const && other)
+camera_keyboard_handler::camera_keyboard_handler(camera_keyboard_handler const && other) noexcept
 	:_camera(other._camera)
 {
-	// remove_from_handlers(&other);
+	remove_from_handlers(&other);
+	_handlers.emplace_back(this);
 }
 
 camera_keyboard_handler::~camera_keyboard_handler()
 {
-	// remove_from_handlers(this);
+	remove_from_handlers(this);
 }

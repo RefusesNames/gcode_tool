@@ -7,9 +7,9 @@ class camera;
 class camera_keyboard_handler : public keyboard_handler
 {
 	public:
-		camera_keyboard_handler(camera & camera);
+		camera_keyboard_handler(camera & camera) noexcept;
 		camera_keyboard_handler(camera_keyboard_handler const & other) = delete;
-		camera_keyboard_handler(camera_keyboard_handler const && other);
+		camera_keyboard_handler(camera_keyboard_handler const && other)  noexcept;
 		~camera_keyboard_handler();
 
 		camera_keyboard_handler& operator=(camera_keyboard_handler const & other) = delete;
